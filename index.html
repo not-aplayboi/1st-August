@@ -145,6 +145,183 @@
         transform: scale(1.05);
     }
 
+    /* Image Preview Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.9);
+        backdrop-filter: blur(10px);
+        animation: fadeIn 0.3s ease;
+    }
+
+    .modal.show {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal-content {
+        position: relative;
+        max-width: 90%;
+        max-height: 90%;
+        animation: zoomIn 0.3s ease;
+    }
+
+    .modal-image {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: 10px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .close-btn {
+        position: absolute;
+        top: -40px;
+        right: 0;
+        color: white;
+        font-size: 35px;
+        font-weight: bold;
+        cursor: pointer;
+        background: rgba(255, 107, 107, 0.8);
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .close-btn:hover {
+        background: var(--accent);
+        transform: scale(1.1);
+        box-shadow: 0 5px 15px rgba(255, 46, 99, 0.4);
+    }
+
+    .modal-caption {
+        position: absolute;
+        bottom: -50px;
+        left: 0;
+        right: 0;
+        background: rgba(255, 255, 255, 0.9);
+        color: #333;
+        padding: 15px;
+        text-align: center;
+        border-radius: 8px;
+        font-size: 1.1em;
+        font-weight: 500;
+        backdrop-filter: blur(10px);
+    }
+
+    .nav-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255, 107, 107, 0.8);
+        color: white;
+        border: none;
+        font-size: 24px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .nav-btn:hover {
+        background: var(--accent);
+        transform: translateY(-50%) scale(1.1);
+    }
+
+    .prev-btn {
+        left: 20px;
+    }
+
+    .next-btn {
+        right: 20px;
+    }
+
+    @keyframes zoomIn {
+        from {
+            transform: scale(0.3);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    /* Loading indicator */
+    .modal-loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 1.2em;
+    }
+
+    .loading-spinner {
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top: 3px solid var(--primary);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Mobile responsive for modal */
+    @media (max-width: 768px) {
+        .modal-content {
+            max-width: 95%;
+            max-height: 85%;
+        }
+
+        .close-btn {
+            top: -35px;
+            font-size: 28px;
+            width: 40px;
+            height: 40px;
+        }
+
+        .modal-caption {
+            bottom: -45px;
+            font-size: 1em;
+            padding: 12px;
+        }
+
+        .nav-btn {
+            width: 45px;
+            height: 45px;
+            font-size: 20px;
+        }
+
+        .prev-btn {
+            left: 10px;
+        }
+
+        .next-btn {
+            right: 10px;
+        }
+    }
+
     .timeline {
         position: relative;
         max-width: 800px;
@@ -666,6 +843,21 @@
     </div>
 </section>
 
+<!-- Image Preview Modal -->
+<div id="imageModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-loading">
+            <div class="loading-spinner"></div>
+            Loading...
+        </div>
+        <span class="close-btn">&times;</span>
+        <button class="nav-btn prev-btn">&#10094;</button>
+        <button class="nav-btn next-btn">&#10095;</button>
+        <img class="modal-image" id="modalImage" src="" alt="">
+        <div class="modal-caption" id="modalCaption"></div>
+    </div>
+</div>
+
 <footer>
     <p>Made with ❤ for the most wonderful girlfriend in the world</p>
     <p>Thank You for being the Best Girlfriend Ever! I love you Pamela Adu Ankomah... I love you more than words can say.</p>
@@ -804,7 +996,133 @@
         // Initialize other effects
         checkCards();
         createConfetti();
+        
+        // Initialize image preview modal
+        initImageModal();
     });
+
+    // Image Modal Functionality
+    function initImageModal() {
+        const modal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const modalCaption = document.getElementById('modalCaption');
+        const closeBtn = document.querySelector('.close-btn');
+        const prevBtn = document.querySelector('.prev-btn');
+        const nextBtn = document.querySelector('.next-btn');
+        const loading = document.querySelector('.modal-loading');
+        
+        // Get all gallery images
+        const galleryImages = document.querySelectorAll('.photo-gallery img');
+        let currentImageIndex = 0;
+
+        // Add click event to each gallery image
+        galleryImages.forEach((img, index) => {
+            img.style.cursor = 'pointer';
+            img.addEventListener('click', function() {
+                currentImageIndex = index;
+                openModal(this.src, this.alt);
+            });
+        });
+
+        function openModal(src, caption) {
+            modal.classList.add('show');
+            loading.style.display = 'block';
+            modalImage.style.display = 'none';
+            modalCaption.textContent = caption;
+            
+            // Load the image
+            modalImage.onload = function() {
+                loading.style.display = 'none';
+                modalImage.style.display = 'block';
+            };
+            modalImage.src = src;
+            
+            // Prevent body scrolling
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            modal.classList.remove('show');
+            document.body.style.overflow = 'auto';
+            
+            setTimeout(() => {
+                modalImage.src = '';
+            }, 300);
+        }
+
+        function showImage(index) {
+            if (index >= 0 && index < galleryImages.length) {
+                currentImageIndex = index;
+                const img = galleryImages[index];
+                openModal(img.src, img.alt);
+            }
+        }
+
+        function nextImage() {
+            const nextIndex = (currentImageIndex + 1) % galleryImages.length;
+            showImage(nextIndex);
+        }
+
+        function prevImage() {
+            const prevIndex = (currentImageIndex - 1 + galleryImages.length) % galleryImages.length;
+            showImage(prevIndex);
+        }
+
+        // Event listeners
+        closeBtn.addEventListener('click', closeModal);
+        nextBtn.addEventListener('click', nextImage);
+        prevBtn.addEventListener('click', prevImage);
+
+        // Close modal when clicking outside the image
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (modal.classList.contains('show')) {
+                switch(e.key) {
+                    case 'Escape':
+                        closeModal();
+                        break;
+                    case 'ArrowLeft':
+                        prevImage();
+                        break;
+                    case 'ArrowRight':
+                        nextImage();
+                        break;
+                }
+            }
+        });
+
+        // Touch/swipe support for mobile
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        modal.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        modal.addEventListener('touchend', function(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const swipeDistance = touchEndX - touchStartX;
+            
+            if (Math.abs(swipeDistance) > swipeThreshold) {
+                if (swipeDistance > 0) {
+                    prevImage(); // Swipe right = previous image
+                } else {
+                    nextImage(); // Swipe left = next image
+                }
+            }
+        }
+    }
 
     // Scroll events
     window.addEventListener('scroll', checkCards);
